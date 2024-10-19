@@ -36,15 +36,15 @@ jobs:
       - name: Terragrunt Init
         run: |
           cd ${{ env.CONFIG_DIRECTORY }}
-          terragrunt run-all init
+          terragrunt run-all init --terragrunt-non-interactive
 
       - name: Terragrunt Plan
         run: |
           cd ${{ env.CONFIG_DIRECTORY }}
-          terragrunt run-all plan
+          terragrunt run-all plan --terragrunt-non-interactive
 
       - name: Terragrunt Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: |
           cd ${{ env.CONFIG_DIRECTORY }}
-          terragrunt run-all apply --auto-approve
+          terragrunt run-all apply --auto-approve --terragrunt-non-interactive
