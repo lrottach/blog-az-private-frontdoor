@@ -1,4 +1,4 @@
-name: "Terraform Apply"
+name: "Terragrunt Apply"
 
 on:
   push:
@@ -12,9 +12,8 @@ env:
   CONFIG_DIRECTORY: "./infra"
 
 jobs:
-  terraform:
-    if: github.repository != 'hashicorp-education/learn-terraform-github-actions'
-    name: "Terraform Apply"
+  terragrunt:
+    name: "Terragrunt Apply"
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -22,24 +21,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Upload Configuration
-        uses: hashicorp/tfc-workflows-github/actions/upload-configuration@v1.0.0
-        id: apply-upload
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
         with:
-          workspace: ${{ env.TF_WORKSPACE }}
-          directory: ${{ env.CONFIG_DIRECTORY }}
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
-      - name: Create Apply Run
-        uses: hashicorp/tfc-workflows-github/actions/create-run@v1.0.0
-        id: apply-run
+      - name: Setup Terragrunt
+        uses: autero1/action-terragrunt@v1.3.2
         with:
-          workspace: ${{ env.TF_WORKSPACE }}
-          configuration_version: ${{ steps.apply-upload.outputs.configuration_version_id }}
+          terragrunt_version: latest
 
-      - name: Apply
-        uses: hashicorp/tfc-workflows-github/actions/apply-run@v1.0.0
-        if: fromJSON(steps.apply-run.outputs.payload).data.attributes.actions.IsConfirmable
-        id: apply
-        with:
-          run: ${{ steps.apply-run.outputs.run_id }}
-          comment: "Apply Run from GitHub Actions CI ${{ github.sha }}"
+      - name: Terragrunt Init
+        run: terragrunt init
+        working-directory: ${{ env.CONFIG_DIRECTORY }}
+
+      - name: Terragrunt Plan
+        run: terragrunt plan -no-color
+        working-directory: ${{ env.CONFIG_DIRECTORY }}
+
+      - name: Terragrunt Apply
+        if: github.ref == 'refs/heads/main'
+        run: terragrunt apply -auto-approve
+        working-directory: ${{ env.CONFIG_DIRECTORY }}
