@@ -24,6 +24,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
+          terraform_version: 1.9.8
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
       - name: Setup Terragrunt
@@ -37,15 +38,25 @@ jobs:
       - name: Terraform version
         run: terraform --version
 
+      - name: Get Terraform binary path
+        id: tf-path
+        run: echo "tf_path=$(which terraform)" >> $GITHUB_OUTPUT
+
       - name: Terragrunt Init
         run: terragrunt init
+        env:
+          TERRAGRUNT_TFPATH: ${{ steps.tf-path.outputs.tf_path }}
         working-directory: ${{ env.CONFIG_DIRECTORY }}
 
       - name: Terragrunt Plan
         run: terragrunt plan -no-color
+        env:
+          TERRAGRUNT_TFPATH: ${{ steps.tf-path.outputs.tf_path }}
         working-directory: ${{ env.CONFIG_DIRECTORY }}
 
       - name: Terragrunt Apply
         if: github.ref == 'refs/heads/main'
         run: terragrunt apply -auto-approve
+        env:
+          TERRAGRUNT_TFPATH: ${{ steps.tf-path.outputs.tf_path }}
         working-directory: ${{ env.CONFIG_DIRECTORY }}
