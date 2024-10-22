@@ -1,12 +1,9 @@
-// remote_state {
-//   backend = "remote"
-//   config = {
-//     organization = "dark-contoso"
-//     workspaces = {
-//       prefix = "blog-az-"
-//     }
-//   }
-// }
+locals {
+  # Automatically load region-level variables
+  region_vars = read_terragrunt_config(find_in_parent_folders("region.hcl"))
+  area_vars = read_terragrunt_config(find_in_parent_folders("area.hcl"))
+  level_vars = read_terragrunt_config(find_in_parent_folders("level.hcl"))
+}
 
 remote_state {
   backend = "azurerm"
@@ -24,15 +21,6 @@ remote_state {
   }
 }
 
-// generate "backend" {
-//   path      = "backend.tf"
-//   if_exists = "overwrite_terragrunt"
-//   contents  = <<EOF
-// terraform {
-//   backend "azurerm" {}
-// }
-// EOF
-// }
 
 terraform {
   # Force Terraform to keep trying to acquire a lock for
@@ -67,3 +55,16 @@ provider "azurerm" {
 }
 EOF
 }
+
+# ---------------------------------------------------------------------------------------------------------------------
+# GLOBAL PARAMETERS
+# These variables apply to all configurations in this subfolder. These are automatically merged into the child
+# `terragrunt.hcl` config via the include block.
+# ---------------------------------------------------------------------------------------------------------------------
+
+# Configure root level variables that all resources can inherit. This is especially helpful with multi-account configs
+# where terraform_remote_state data sources are placed directly into the modules.
+inputs = merge(
+  local.region_vars.locals,
+  local.level_vars.locals
+)
